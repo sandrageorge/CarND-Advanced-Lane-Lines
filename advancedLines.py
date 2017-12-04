@@ -15,7 +15,7 @@ imgpoints = [] # 2d points in image plane.
 nx = 9 # the number of inside corners in x
 ny = 6 # the number of inside corners in y
 # Make a list of calibration images
-images = glob.glob('camera_cal/calibration*.jpg')
+images = glob.glob('camera_cal/calibration3.jpg')
 chessboards = []
 # Step through the list and search for chessboard corners
 for fname in images:
@@ -39,6 +39,12 @@ for fname in images:
 
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 
+# plt.imshow(img, cmap=plt.get_cmap('gray'))
+# plt.savefig("writeup_images/chess.jpg")
+# undist_test_image = cv2.undistort(img, mtx, dist, None, mtx)
+# plt.imshow(undist_test_image, cmap=plt.get_cmap('gray'))
+# plt.savefig("writeup_images/chess_undist_test_image.jpg")
+
 
 def abs_sobel_thresh(img, orient='x', thresh_min=0, thresh_max=255):
     hsv = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
@@ -47,13 +53,12 @@ def abs_sobel_thresh(img, orient='x', thresh_min=0, thresh_max=255):
     mask = cv2.bitwise_or(white,yellow)
 
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # cv2.imshow('gray', gray)
-    # cv2.waitKey(500)
+
     sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0)
     abs_sobelx = np.absolute(sobelx)
     scaled_sobel = np.uint8(255 * abs_sobelx / np.max(abs_sobelx))
 
-    thresh_min = 30
+    thresh_min = 10
     thresh_max = 150
     sxbinary = np.zeros_like(scaled_sobel)
     retval, sxthresh = cv2.threshold(scaled_sobel, thresh_min, thresh_max, cv2.THRESH_BINARY)
@@ -86,18 +91,23 @@ def perspective_transform(img, M=None, src_in=None, dst_in=None):
     #                   [img_size[0] - offset, img_size[1] - offset],
     #                   [offset, img_size[1] - offset]])
     if src_in is None:
-        src = np.array([[585. /1280.*img_size[1], 455./720.*img_size[0]],
-                        [705. /1280.*img_size[1], 455./720.*img_size[0]],
-                        [1130./1280.*img_size[1], 720./720.*img_size[0]],
-                        [190. /1280.*img_size[1], 720./720.*img_size[0]]], np.float32)
+        src = np.array([[600. / 1280. * img_size[1], 455. / 720. * img_size[0]],
+                        [690. / 1280. * img_size[1], 455. / 720. * img_size[0]],
+                        [1100. / 1280. * img_size[1], 720. / 720. * img_size[0]],
+                        [210. / 1280. * img_size[1], 720. / 720. * img_size[0]]], np.float32)
+
+        # src = np.array([[575. / 1280. * img_size[1], 460. / 720. * img_size[0]],
+        #                 [705. / 1280. * img_size[1], 460. / 720. * img_size[0]],
+        #                 [1127. / 1280. * img_size[1], 720. / 720. * img_size[0]],
+        #                 [203. / 1280. * img_size[1], 720. / 720. * img_size[0]]], np.float32)
     else:
         src = src_in
 
     if dst_in is None:
-        dst = np.array([[300. /1280.*img_size[1], 100./720.*img_size[0]],
-                        [1000./1280.*img_size[1], 100./720.*img_size[0]],
-                        [1000./1280.*img_size[1], 720./720.*img_size[0]],
-                        [300. /1280.*img_size[1], 720./720.*img_size[0]]], np.float32)
+        dst = np.array([[320. / 1280. * img_size[1], 100. / 720. * img_size[0]],
+                        [960. / 1280. * img_size[1], 100. / 720. * img_size[0]],
+                        [960. / 1280. * img_size[1], 720. / 720. * img_size[0]],
+                        [320. / 1280. * img_size[1], 720. / 720. * img_size[0]]], np.float32)
     else:
         dst = dst_in
 
@@ -311,6 +321,9 @@ def draw_lane(img, perspective_img, undist_img, Minv, ploty, left_fitx, right_fi
     # Combine the result with the original image
     result = cv2.addWeighted(undist_img, 1, newwarp, 0.3, 0)
 
+    plt.imshow(result)
+    plt.savefig("writeup_images/result.jpg")
+
     return result
 
 
@@ -319,10 +332,18 @@ def process_image(img):
     # undistort image
     undist_img = cv2.undistort(img, mtx, dist, None, mtx)
     # apply binary thresholds
+    plt.imshow(undist_img,cmap=plt.get_cmap('gray'))
+    plt.savefig("writeup_images/undist_img.jpg")
+
     binary = abs_sobel_thresh(undist_img)
     # apply perspective transform
+    plt.imshow(binary, cmap=plt.get_cmap('gray'))
+    plt.savefig("writeup_images/binary.jpg")
 
     perspective_img, Minv, src, dst = perspective_transform(binary)
+
+    plt.imshow(perspective_img, cmap=plt.get_cmap('gray'))
+    plt.savefig("writeup_images/perspective_img.jpg")
 
     if (left_lane.detected is False) or (right_lane.detected is False):
         out_img, ploty, left_fitx, right_fitx = find_lane(perspective_img)
@@ -330,36 +351,39 @@ def process_image(img):
         # print("shouldnt be here")
         out_img, ploty = update_lanes(perspective_img)
 
+    plt.imshow(out_img)
+    plt.savefig("writeup_images/out_img.jpg")
+
     return draw_lane(img, perspective_img, undist_img, Minv, ploty, left_fitx, right_fitx)
-
-from moviepy.editor import VideoFileClip
-from IPython.display import HTML
-
-output = 'project_video_lanes.mp4'
-clip1 = VideoFileClip("project_video.mp4")
-left_lane = Line()
-right_lane = Line()
-clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-clip.write_videofile(output, audio=False)
-
-HTML("""
-<video width="960" height="540" controls>
-  <source src="{0}">
-</video>
-# """.format(output))
-
-
-
-# test_images_path = glob.glob('test_images/*.jpg')
-# original_test_images = []
-# undist_test_images = []
 #
-# for test_image_path in test_images_path:
-#     test_image = cv2.cvtColor(cv2.imread(test_image_path),cv2.COLOR_BGR2RGB)
-#     undist_test_image = cv2.undistort(test_image, mtx, dist, None, mtx)
+# from moviepy.editor import VideoFileClip
+# from IPython.display import HTML
 #
-#     left_lane = Line()
-#     right_lane = Line()
+# output = 'challenge_video_lanes.mp4'
+# clip1 = VideoFileClip("challenge_video.mp4")
+# left_lane = Line()
+# right_lane = Line()
+# clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+# clip.write_videofile(output, audio=False)
 #
-#     # plt.figure(figsize=(20,10))
-#     out = process_image(test_image)
+# HTML("""
+# <video width="960" height="540" controls>
+#   <source src="{0}">
+# </video>
+# # """.format(output))
+#
+
+
+test_images_path = glob.glob('test_images/test2.jpg')
+original_test_images = []
+undist_test_images = []
+
+for test_image_path in test_images_path:
+    test_image = cv2.cvtColor(cv2.imread(test_image_path),cv2.COLOR_BGR2RGB)
+    undist_test_image = cv2.undistort(test_image, mtx, dist, None, mtx)
+
+    left_lane = Line()
+    right_lane = Line()
+
+    # plt.figure(figsize=(20,10))
+    out = process_image(test_image)
