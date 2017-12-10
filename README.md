@@ -23,6 +23,8 @@ The goals / steps of this project are the following:
 [image1]: ./writeup_images/undist_img.jpg "Undistorted"
 [image2]: ./test_images/test2.jpg "Road Transformed"
 [image3]: ./writeup_images/binary.jpg "Binary Example"
+[image6]: ./writeup_images/perspective_img.jpg "Binary Example"
+[image7]: ./writeup_images/out_img.jpg "Binary Example"
 [image4]: ./writeup_images/out_img.jp "Fit Visual"
 [image5]: ./writeup_images/result.jpg "Output"
 [video1]: ./project_video.mp4 "Video"
@@ -98,6 +100,14 @@ I verified that my perspective transform was working as expected by drawing the 
 
 ![alt text][image3]
 
+The prespective image 
+
+![alt text][image6]
+
+Output of finding lane function 
+
+![alt text][image7]
+
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
 After undistorting the image, extracting binary data, and applying perspective transform, the next required step is to extract pixels that are associated to lane lines. This was done using the sliding window search. 
@@ -129,3 +139,12 @@ Here's a [link to my video result](./project_video.mp4)
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+
+Challenges
+1- Binary data extraction: I used Sobel X with a threshold X-channel from HSV colour space. Then i migrated to the white mask from RGB space and yellow mask from HSV, these perfectly detected lane lines.
+2- Finding a way to implement the lane update function instead of executing a blind search for every frame. 
+The Line() helped to store data that is accessible by every function in the pipeline.
+
+Further improvements
+1- The binary data extraction method used is very limited to near-perfect light condition. This is the main reason of the system failure when testing using the challenge video. 
+2- Sanity checks could help improve the tracking quality.
